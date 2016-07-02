@@ -1,5 +1,4 @@
 #include <vector>
-#include <forward_list>
 #include <random>
 #include <assert.h>
 #include <algorithm>
@@ -10,12 +9,12 @@
 
 using namespace std;
 
-template<typename T> list<T> range(T start, T end)
+template<typename T> forward_list<T> range(T start, T end)
 {
-    list<T> v;
-    for (T x = start; x < end; ++x)
+    forward_list<T> v;
+    for (T x = end - 1; x >= start; --x)
     {
-        v.emplace_back(x);
+        v.push_front(x);
     }
     return v;
 }
@@ -34,17 +33,17 @@ bool generate_valid_sudoku(mt19937 mersenne_twister, SudokuGrid& grid, unsigned 
 
     for (auto choice : choices)
     {
-        SudokuGrid s(grid);
-        s.cell(x, y) = choice;
+        grid.cell(x, y) = choice;
         const unsigned next_x = y + 1 == grid.grid_dimension ? x + 1 : x;
         const unsigned next_y = y + 1 == grid.grid_dimension ? 0 : y + 1;
-        if (generate_valid_sudoku(mersenne_twister, s, next_x, next_y))
+        if (generate_valid_sudoku(mersenne_twister, grid, next_x, next_y))
         {
-            grid = s;
             return true;
         }
     }
 
+    // Since we didn't generate a valid solution, mark this cell unoccupied.
+    grid.cell(x, y) = 0;
     return false;
 }
 
@@ -69,7 +68,7 @@ unsigned& SudokuGrid::cell(unsigned row, unsigned column)
     return grid[row * grid_dimension + column];
 }
 
-list<unsigned>& SudokuGrid::filter_row(unsigned row, list<unsigned>& v)
+forward_list<unsigned>& SudokuGrid::filter_row(unsigned row, forward_list<unsigned>& v)
 {
     for (unsigned i = 0; i < grid_dimension; ++i)
     {
@@ -78,7 +77,7 @@ list<unsigned>& SudokuGrid::filter_row(unsigned row, list<unsigned>& v)
     return v;
 }
 
-list<unsigned>& SudokuGrid::filter_column(unsigned col, list<unsigned>& v)
+forward_list<unsigned>& SudokuGrid::filter_column(unsigned col, forward_list<unsigned>& v)
 {
     for (unsigned i = 0; i < grid_dimension; ++i)
     {
@@ -87,7 +86,7 @@ list<unsigned>& SudokuGrid::filter_column(unsigned col, list<unsigned>& v)
     return v;
 }
 
-list<unsigned>& SudokuGrid::filter_subgrid(unsigned row, unsigned col, list<unsigned>& v)
+forward_list<unsigned>& SudokuGrid::filter_subgrid(unsigned row, unsigned col, forward_list<unsigned>& v)
 {
     const unsigned row_start = subgrid_dimension * (row / subgrid_dimension);
     const unsigned col_start = subgrid_dimension * (col / subgrid_dimension);
