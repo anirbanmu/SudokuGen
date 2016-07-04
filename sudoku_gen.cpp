@@ -4,12 +4,13 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <thread>
 
 #include "sudoku_gen.h"
 
 using namespace std;
 
-template<bool return_on_valid> bool SudokuGenerator::generate_valid_sudoku(unsigned x, unsigned y)
+template<bool return_on_valid> bool SudokuGenerator::generate_valid_sudoku(function<void(const SudokuGrid&)> callback, mt19937 mersenne_twister, SudokuGrid& grid, unsigned x, unsigned y)
 {
     // We have filled the whole sudoku grid once we reach the beginning of dimension + 1 row, i.e. found a solution.
     if (x == grid.grid_dimension && y == 0)
@@ -30,7 +31,7 @@ template<bool return_on_valid> bool SudokuGenerator::generate_valid_sudoku(unsig
         grid.cell(x, y) = choice;
         const unsigned next_x = y + 1 == grid.grid_dimension ? x + 1 : x;
         const unsigned next_y = y + 1 == grid.grid_dimension ? 0 : y + 1;
-        if (generate_valid_sudoku<return_on_valid>(next_x, next_y) && return_on_valid)
+        if (generate_valid_sudoku<return_on_valid>(callback, mersenne_twister, grid, next_x, next_y) && return_on_valid)
         {
             return true;
         }
@@ -43,12 +44,38 @@ template<bool return_on_valid> bool SudokuGenerator::generate_valid_sudoku(unsig
 
 void SudokuGenerator::generate_random_sudoku()
 {
-    generate_valid_sudoku<true>(0, 0);
+    generate_valid_sudoku<true>(callback, mersenne_twister, grid, 0, 0);
 }
 
 void SudokuGenerator::generate_all_sudoku()
 {
-    generate_valid_sudoku<false>(0, 0);
+    const unsigned thread_count = 4;
+
+    auto choices = grid.cell_choices(0, 0);
+
+    auto partition_func = [&](unsigned start, unsigned end)
+                            {
+                                SudokuGenerator gen(grid.grid_dimension, callback);
+
+                                for (unsigned i = start; i < end; ++i)
+                                {
+                                    gen.grid.cell(0, 0) = choices[i];
+                                    generate_valid_sudoku<false>(callback, gen.mersenne_twister, gen.grid, 0, 1);
+                                }
+                            };
+
+    const unsigned partition_size = choices.size() / thread_count;
+    vector<thread> threads;
+    for (unsigned i = 1; i < thread_count; ++i)
+    {
+        threads.emplace_back(partition_func, i * partition_size, (i + 1 == thread_count) ? choices.size() : (i + 1) * partition_size);
+    }
+
+    partition_func(0, partition_size);
+    for(auto& t : threads)
+    {
+        t.join();
+    }
 }
 
 template<typename T> forward_list<T> range(T start, T end)
@@ -123,4 +150,17 @@ void SudokuGrid::print() const
         }
         cout << endl;
     }
+}
+
+std::ostream& operator<<(std::ostream& os, const SudokuGrid& s)
+{
+    for (unsigned r = 0; r < s.grid_dimension; ++r)
+    {
+        for (unsigned c = 0; c < s.grid_dimension; ++c)
+        {
+            os << (c == 0 ? "" : ", ") << s.grid[r * s.grid_dimension + c];
+        }
+        os << (r + 1 == s.grid_dimension ? "" : ",") << endl;
+    }
+    return os;
 }

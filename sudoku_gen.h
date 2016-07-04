@@ -17,12 +17,15 @@ struct SudokuGrid
     std::vector<unsigned> cell_choices(unsigned row, unsigned column);
     void print() const;
 
+    friend std::ostream& operator<<(std::ostream&, const SudokuGrid&);
+
     unsigned grid_dimension;
     unsigned subgrid_dimension;
     std::vector<unsigned> grid;
     std::forward_list<unsigned> value_range;
 };
 
+// Callback function may be called on multiple threads; no guarantees.
 class SudokuGenerator
 {
     public:
@@ -34,7 +37,7 @@ class SudokuGenerator
         void generate_all_sudoku();
 
     private:
-        template<bool return_on_valid> bool generate_valid_sudoku(unsigned x, unsigned y);
+        template<bool return_on_valid> static bool generate_valid_sudoku(std::function<void(const SudokuGrid&)> callback, std::mt19937 mersenne_twister, SudokuGrid& grid, unsigned x, unsigned y);
 
         SudokuGrid grid;
         std::function<void(const SudokuGrid&)> callback;

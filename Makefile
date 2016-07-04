@@ -1,5 +1,5 @@
 CXX := clang++-3.8
-CXXFLAGS := -O2 -Wall -Werror -std=c++14
+CXXFLAGS := -O2 -Wall -Werror -std=c++14 -pthread
 
 # Link
 sudoku_gen_random: random.o sudoku_gen.o sudoku_gen_all
