@@ -30,4 +30,4 @@
 *.exe
 *.out
 *.app
-sudoku_gen
+sudoku_gen_*

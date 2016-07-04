@@ -9,6 +9,56 @@
 
 using namespace std;
 
+template<bool return_on_valid> bool generate_valid_sudoku(function<void(const SudokuGrid&)> callback, mt19937 mersenne_twister, SudokuGrid& grid, unsigned x, unsigned y)
+{
+    // We have filled the whole sudoku grid once we reach the beginning of dimension + 1 row, i.e. found a solution.
+    if (x == grid.grid_dimension && y == 0)
+    {
+        callback(grid);
+        return true;
+    }
+
+    // Shuffle our choices to generate a random puzzle
+    auto choices = grid.cell_choices(x, y);
+    if (return_on_valid)
+    {
+        shuffle(choices.begin(), choices.end(), mersenne_twister);
+    }
+
+    for (auto choice : choices)
+    {
+        grid.cell(x, y) = choice;
+        const unsigned next_x = y + 1 == grid.grid_dimension ? x + 1 : x;
+        const unsigned next_y = y + 1 == grid.grid_dimension ? 0 : y + 1;
+        if (generate_valid_sudoku<return_on_valid>(callback, mersenne_twister, grid, next_x, next_y) && return_on_valid)
+        {
+            return true;
+        }
+    }
+
+    // Mark this cell unoccupied before returning control.
+    grid.cell(x, y) = 0;
+    return false;
+}
+
+SudokuGrid generate_random_sudoku(unsigned dimension, function<void(const SudokuGrid&)> callback)
+{
+    random_device rd;
+
+    SudokuGrid s(dimension);
+    generate_valid_sudoku<true>(callback, mt19937(rd()), s, 0, 0);
+
+    return s;
+}
+
+void generate_all_sudoku(unsigned dimension, function<void(const SudokuGrid&)> callback)
+{
+    random_device rd;
+
+    auto s = SudokuGrid(dimension);
+    generate_valid_sudoku<false>(callback, mt19937(rd()), s, 0, 0);
+}
+
 template<typename T> forward_list<T> range(T start, T end)
 {
     forward_list<T> v;
@@ -17,45 +67,6 @@ template<typename T> forward_list<T> range(T start, T end)
         v.push_front(x);
     }
     return v;
-}
-
-bool generate_valid_sudoku(mt19937 mersenne_twister, SudokuGrid& grid, unsigned x, unsigned y)
-{
-    // We have filled the whole sudoku grid once we reach the beginning of dimension + 1 row, i.e. found a solution.
-    if (x == grid.grid_dimension && y == 0)
-    {
-        return true;
-    }
-
-    // Shuffle our choices to generate a random puzzle
-    auto choices = grid.cell_choices(x, y);
-    shuffle(choices.begin(), choices.end(), mersenne_twister);
-
-    for (auto choice : choices)
-    {
-        grid.cell(x, y) = choice;
-        const unsigned next_x = y + 1 == grid.grid_dimension ? x + 1 : x;
-        const unsigned next_y = y + 1 == grid.grid_dimension ? 0 : y + 1;
-        if (generate_valid_sudoku(mersenne_twister, grid, next_x, next_y))
-        {
-            return true;
-        }
-    }
-
-    // Since we didn't generate a valid solution, mark this cell unoccupied.
-    grid.cell(x, y) = 0;
-    return false;
-}
-
-SudokuGrid generate_random_sudoku(unsigned dimension)
-{
-    random_device rd;
-    mt19937 mersenne_twister(rd());
-
-    SudokuGrid s(dimension);
-    generate_valid_sudoku(mersenne_twister, s, 0, 0);
-
-    return s;
 }
 
 SudokuGrid::SudokuGrid(unsigned dimension) : grid_dimension(dimension), subgrid_dimension(sqrt(float(dimension))), grid(dimension * dimension, 0), value_range(range(unsigned(1), dimension + 1))
@@ -110,13 +121,13 @@ vector<unsigned> SudokuGrid::cell_choices(unsigned row, unsigned column)
     return vector<unsigned>(v.begin(), v.end());
 }
 
-void SudokuGrid::print()
+void SudokuGrid::print() const
 {
     for (unsigned r = 0; r < grid_dimension; ++r)
     {
         for (unsigned c = 0; c < grid_dimension; ++c)
         {
-            cout << setw(5) << cell(r, c);
+            cout << setw(5) << grid[r * grid_dimension + c];
         }
         cout << endl;
     }

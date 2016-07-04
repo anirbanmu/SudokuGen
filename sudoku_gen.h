@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <forward_list>
+#include <functional>
 
 struct SudokuGrid
 {
@@ -13,7 +14,7 @@ struct SudokuGrid
     std::forward_list<unsigned>& filter_column(unsigned col, std::forward_list<unsigned>& v);
     std::forward_list<unsigned>& filter_subgrid(unsigned row, unsigned col, std::forward_list<unsigned>& v);
     std::vector<unsigned> cell_choices(unsigned row, unsigned column);
-    void print();
+    void print() const;
 
     unsigned grid_dimension;
     unsigned subgrid_dimension;
@@ -21,6 +22,7 @@ struct SudokuGrid
     std::forward_list<unsigned> value_range;
 };
 
-SudokuGrid generate_random_sudoku(unsigned dimension);
+SudokuGrid generate_random_sudoku(unsigned dimension, std::function<void(const SudokuGrid&)> callback);
+void generate_all_sudoku(unsigned dimension, std::function<void(const SudokuGrid&)> callback);
 
 #endif
