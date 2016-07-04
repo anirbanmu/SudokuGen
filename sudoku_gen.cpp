@@ -9,7 +9,7 @@
 
 using namespace std;
 
-template<bool return_on_valid> bool generate_valid_sudoku(function<void(const SudokuGrid&)> callback, mt19937 mersenne_twister, SudokuGrid& grid, unsigned x, unsigned y)
+template<bool return_on_valid> bool SudokuGenerator::generate_valid_sudoku(unsigned x, unsigned y)
 {
     // We have filled the whole sudoku grid once we reach the beginning of dimension + 1 row, i.e. found a solution.
     if (x == grid.grid_dimension && y == 0)
@@ -30,7 +30,7 @@ template<bool return_on_valid> bool generate_valid_sudoku(function<void(const Su
         grid.cell(x, y) = choice;
         const unsigned next_x = y + 1 == grid.grid_dimension ? x + 1 : x;
         const unsigned next_y = y + 1 == grid.grid_dimension ? 0 : y + 1;
-        if (generate_valid_sudoku<return_on_valid>(callback, mersenne_twister, grid, next_x, next_y) && return_on_valid)
+        if (generate_valid_sudoku<return_on_valid>(next_x, next_y) && return_on_valid)
         {
             return true;
         }
@@ -41,22 +41,14 @@ template<bool return_on_valid> bool generate_valid_sudoku(function<void(const Su
     return false;
 }
 
-SudokuGrid generate_random_sudoku(unsigned dimension, function<void(const SudokuGrid&)> callback)
+void SudokuGenerator::generate_random_sudoku()
 {
-    random_device rd;
-
-    SudokuGrid s(dimension);
-    generate_valid_sudoku<true>(callback, mt19937(rd()), s, 0, 0);
-
-    return s;
+    generate_valid_sudoku<true>(0, 0);
 }
 
-void generate_all_sudoku(unsigned dimension, function<void(const SudokuGrid&)> callback)
+void SudokuGenerator::generate_all_sudoku()
 {
-    random_device rd;
-
-    auto s = SudokuGrid(dimension);
-    generate_valid_sudoku<false>(callback, mt19937(rd()), s, 0, 0);
+    generate_valid_sudoku<false>(0, 0);
 }
 
 template<typename T> forward_list<T> range(T start, T end)

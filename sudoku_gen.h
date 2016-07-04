@@ -4,6 +4,7 @@
 #include <vector>
 #include <forward_list>
 #include <functional>
+#include <random>
 
 struct SudokuGrid
 {
@@ -22,7 +23,23 @@ struct SudokuGrid
     std::forward_list<unsigned> value_range;
 };
 
-SudokuGrid generate_random_sudoku(unsigned dimension, std::function<void(const SudokuGrid&)> callback);
-void generate_all_sudoku(unsigned dimension, std::function<void(const SudokuGrid&)> callback);
+class SudokuGenerator
+{
+    public:
+        SudokuGenerator(unsigned dimension, std::function<void(const SudokuGrid&)> c) : grid(dimension), callback(c), mersenne_twister(rd())
+        {
+        }
+
+        void generate_random_sudoku();
+        void generate_all_sudoku();
+
+    private:
+        template<bool return_on_valid> bool generate_valid_sudoku(unsigned x, unsigned y);
+
+        SudokuGrid grid;
+        std::function<void(const SudokuGrid&)> callback;
+        std::random_device rd;
+        std::mt19937 mersenne_twister;
+};
 
 #endif

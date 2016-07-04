@@ -5,10 +5,10 @@ using namespace std;
 
 int main(int, char**)
 {
-    generate_all_sudoku(9, [](const SudokuGrid& g)
+    SudokuGenerator(9, [](const SudokuGrid& g)
                             {
                                 g.print();
                                 cout << endl;
-                            });
+                            }).generate_all_sudoku();
     return 0;
 }
